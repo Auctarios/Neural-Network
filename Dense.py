@@ -22,10 +22,14 @@ class Dense(Layer):
 
 
     def initialize(self, input_size):
+        # TODO
         self.weights = np.random.rand(input_size, self.size) - 0.5
         print(self.weights.shape)
         self.bias = np.random.rand(1, self.size) - 0.5
-
+        
+        # self.weights = np.random.rand(input_size, self.size)*10000
+        # print(self.weights.shape)
+        # self.bias = np.random.rand(1, self.size) - 0.5
 
     def forward(self, input):
         lin_out = np.dot(input, self.weights) + self.bias
