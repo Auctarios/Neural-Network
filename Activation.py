@@ -29,7 +29,7 @@ class Activation():
         return x
     
     def none_prime(self, x):
-        return 1
+        return np.ones_like(x)
     
     def lrelu(self, x):
         x[x < 0] = x[x < 0]*0.01
