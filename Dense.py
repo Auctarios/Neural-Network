@@ -22,14 +22,9 @@ class Dense(Layer):
 
 
     def initialize(self, input_size):
-        # TODO
-        self.weights = np.random.rand(input_size, self.size) - 0.5
-        print(self.weights.shape)
-        self.bias = np.random.rand(1, self.size) - 0.5
+        self.weights = np.random.rand(input_size, self.size)
+        self.bias = np.random.rand(1, self.size)
         
-        # self.weights = np.random.rand(input_size, self.size)*10000
-        # print(self.weights.shape)
-        # self.bias = np.random.rand(1, self.size) - 0.5
 
     def forward(self, input):
         lin_out = np.dot(input, self.weights) + self.bias
@@ -52,41 +47,20 @@ class Dense(Layer):
     def backward_propagation(self, output_error, learning_rate):
         a = self.activation_prime(self.linear_output)
         b = output_error
-
-        # print("-------------------")
-        # print("a type", type(a))
-        # print("b type", type(b))
-        # print("a shape", a.shape)
-        # print("b shape", b.shape)
         
         if b.ndim == 1:
             a = a.reshape(-1)
-        
-        # print("AAa type", type(a))
-        # print("AAb type", type(b))
-        # print("AAa shape", a.shape)
-        # print("AAb shape", b.shape)
 
         error = a * b
-
-        # print("error type", type(error))
-        # print("error shape", error.shape)
 
         error = np.array(error)
 
         if error.ndim == 1:
             error = error.reshape(-1, 1)
 
-        # print("AAerror type", type(error))
-        # print("AAerror shape", error.shape)
-
-        # print("-------------------")
-        
-        # error = self.activation_prime(self.linear_output) * output_error
         input_error = np.dot(error, self.weights.T)
         weights_error = np.dot(self.input.T, error) / self.input.shape[0]
         bias_error = np.mean(error, axis=0, keepdims=True)
-        # print(f"Weights {self.weights}")
         self.weights -= learning_rate * weights_error
         self.bias -= learning_rate * bias_error
         return input_error
