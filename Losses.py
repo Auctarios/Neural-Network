@@ -37,6 +37,7 @@ class Losses:
         y_pred[y_pred == 1] = 1 - (1e-10)
         bce = -np.mean(y_true * np.log(y_pred) + (1 - y_true) * np.log(1 - y_pred))
         return bce
+    #squeze unqueze
     
     @staticmethod
     def BinaryCrossEntropy_deri(y_true, y_pred):

@@ -3,11 +3,13 @@ from Layer import *
 import warnings
 import numpy as np
 from Losses import Losses
+from Optimizers import Optimizers
 class Sequential:
-    def __init__(self):
+    def __init__(self, optimizer = Optimizers.SGD()):
         self.layers = []
         self.errors = []
         self.val_errors = None
+        self.optimizer = optimizer
 
     def add(self, layer):
         if not isinstance(layer, Layer):
@@ -19,7 +21,7 @@ class Sequential:
         prev_output_size = input_shape
         for layer in self.layers:
             if layer.weights is None:
-                layer.initialize(prev_output_size)
+                layer.initialize(prev_output_size, type(self.optimizer)())
             prev_output_size = layer.size
 
     def forward_propagation(self, input_data):
@@ -61,6 +63,9 @@ class Sequential:
                 
                 output = self.forward_propagation(x_batch)
 
+                #TODO
+                #output.shape (number of neurons in the last layer) ?= y_batch.shape
+
                 err += np.sum(self.loss(y_batch, output))
 
 
@@ -100,54 +105,3 @@ class Sequential:
     def predict(self, X_test):
         y_pred = self.forward(X_test)
         return y_pred
-
-
-    # TODO
-    # parametrik yap lossları
-    # @staticmethod
-    # def loss(y_true, y_pred):
-    #     y_pred = y_pred.reshape(-1)
-
-    #     y_pred[y_pred == 1] = 1 - 1e-10
-    #     y_pred[y_pred == 0] = 1e-10
-        
-    #     # print("y_true shape", y_true.shape)
-    #     # print("y_pred shape", y_pred.shape)
-    #     """Binary cross-entropy loss."""
-    #     los = 0
-    #     with warnings.catch_warnings():
-    #         warnings.filterwarnings("error")
-    #         try:
-    #             los = -np.mean(y_true * np.log(y_pred) + (1 - y_true) * np.log(1 - y_pred))
-    #         except Warning as e:
-    #             print(e)
-    #             print("y_pred", y_pred)
-    #             sys.exit()
-    #     return los
-
-
-    # @staticmethod
-    # def loss_derivative(y_true, y_pred):
-    #     """Derivative of binary cross-entropy loss."""
-    #     # print("y_true shape", y_true.shape)
-    #     # print("y_pred shape", y_pred.shape)
-    #     y_pred = y_pred.reshape(-1)
-    #     # print("AAy_true shape", y_true.shape)
-    #     # print("AAy_pred shape", y_pred.shape)
-    #     # y_pred[y_pred == 1] = 1 - 1e-10
-    #     # y_pred[y_pred == 0] = 1e-10
-    #     return -(y_true / y_pred) - (1 - y_true) / (1 - y_pred)
-
-
-    # @staticmethod
-    # ##MSE
-    # def loss(y_true, y_pred):
-    #     y_pred = y_pred.reshape(-1)
-    #     mse = np.mean((y_true - y_pred) ** 2)
-    #     return mse
-    
-    # @staticmethod
-    # def loss_derivative(y_true, y_pred):
-    #     y_pred = y_pred.reshape(-1)
-    #     derivative = -2 * (y_true - y_pred) / y_true.size
-    #     return derivative
