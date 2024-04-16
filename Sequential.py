@@ -8,8 +8,77 @@ from LRScheduler import LRScheduler
 from Metrics import Metrics
 import copy
 class Sequential:
+    """
+    A class that represents a sequential neural network model.
+
+    This model is composed of a stack of layers added in a sequential manner. It supports various optimizers,
+    learning rate schedulers, and regularization techniques such as L1 and L2 regularization.
+
+    Attributes
+    ----------
+    layers : list
+        A list that holds all the layers within the model.
+    errors : list
+        A list that records the training error after each epoch.
+    val_errors : list or None
+        A list that records the validation error after each epoch, if a validation set is provided.
+    optimizer : Optimizers class instance
+        The optimization algorithm used for training the model.
+    scheduler : LRScheduler class instance
+        The learning rate scheduling strategy.
+    stop : bool
+        A flag used to stop training early if the validation error does not decrease.
+    metrics : Metrics class instance or None
+        The metrics used to evaluate the model performance.
+    l1_lambda : float
+        The regularization strength for L1 regularization.
+    l2_lambda : float
+        The regularization strength for L2 regularization.
+    val_best : Sequential instance or None
+        A deep copy of the model that achieved the best validation performance.
+    val_best_loss : float
+        The best validation loss achieved during training.
+
+    Methods
+    -------
+    add(layer):
+        Adds a layer to the model.
+    build(input_shape):
+        Initializes the model's layers based on the input shape.
+    forward_propagation(input_data):
+        Performs a forward pass through the model.
+    forward(input_data):
+        An alias for forward_propagation, performs a forward pass through the model.
+    backward_propagation(output_error, learning_rate):
+        Performs a backward pass through the model, updating the parameters.
+    train(x_train, y_train, epochs, learning_rate, batch_size, val_set, loss, verbose):
+        Trains the model on the provided training data.
+    summary():
+        Prints a summary of the model's architecture and parameters.
+    predict(X_test):
+        Predicts the outputs for the given test data.
+    """
     def __init__(self, optimizer = Optimizers.SGD(), scheduler = LRScheduler.none(),
                  stop = False, metrics_list=None, l1_lambda = 0.0, l2_lambda = 0.0):
+        """
+        Initializes the Sequential model with the specified optimizer, learning rate scheduler,
+        early stopping criterion, metrics, and regularization parameters.
+
+        Parameters
+        ----------
+        optimizer : Optimizers class instance, optional
+            The optimization algorithm to use (default is SGD).
+        scheduler : LRScheduler class instance, optional
+            The learning rate scheduling strategy to use (default is none).
+        stop : bool, optional
+            Whether to stop training early if the validation performance does not improve (default is False).
+        metrics_list : list of str, optional
+            The list of metric names to evaluate the model performance (default is None).
+        l1_lambda : float, optional
+            The L1 regularization strength (default is 0.0).
+        l2_lambda : float, optional
+            The L2 regularization strength (default is 0.0).
+        """
         self.layers = []
         self.errors = []
         self.val_errors = None
@@ -63,17 +132,57 @@ class Sequential:
                 layer.weights -= learning_rate * self.l2_lambda * layer.weights
 
     def train(self, x_train, y_train, epochs, learning_rate, batch_size = 32, val_set: tuple = None, loss: str = "MSE", verbose: int = 5):
-        #binary, multiclass, multilabel
+        """
+        Trains the neural network model on the provided training data.
+
+        Parameters
+        ----------
+        x_train : np.ndarray
+            The input features of the training data.
+        y_train : np.ndarray
+            The target values (labels) of the training data.
+        epochs : int
+            The number of times to iterate over the entire dataset.
+        learning_rate : float
+            The initial learning rate for the optimizer.
+        batch_size : int, optional
+            The number of samples per batch to load (default is 32).
+        val_set : tuple of np.ndarray, optional
+            A tuple (x_val, y_val) containing the input features and target values (labels) of the validation data (default is None).
+        loss : str, optional
+            The name of the loss function to use (default is "MSE").
+        verbose : int, optional
+            The verbosity mode, specifies how often to print out training progress (default is 5). Printing happens at every epoch if verbose is 1, every 5 epochs if verbose is 5, and so on.
+
+        Overview
+        --------
+        This method orchestrates the training process of the model for a specified number of epochs or until early stopping criteria are met if a validation set and stopping flag are provided. The training process involves:
+        
+        - Initializing the model's layers and weights.
+        - Iterating over the training data in batches.
+        - Performing forward propagation to calculate predictions.
+        - Calculating the loss between predictions and true values.
+        - Performing backward propagation to update weights and biases.
+        - Optionally evaluating the model on a validation set to monitor performance.
+        - Applying learning rate scheduling if specified.
+        - Implementing early stopping based on validation loss improvement.
+
+        The function keeps track of training and validation errors, and it can optionally print out progress information depending on the verbosity level set by the user.
+
+        Note
+        ----
+        The method automatically handles the detection of problem types (binary, multiclass, or multilabel classification) based on the dimensions and values of `y_train` and the activation function of the last layer of the model.
+
+        Returns
+        -------
+        The best model based on validation loss if early stopping is enabled and a validation set is provided; otherwise, the function returns None.
+        """
         if y_train.ndim != 1:
             problem_type = "multiclass" if self.layers[-1].act_str == "softmax" else "multilabel"
         elif y_train.ndim == 1:
             problem_type = "binary"
         else:
             raise ValueError("Something broke")
-        
-        
-        
-        
         
         if self.val_errors is None and val_set is not None:
             self.val_errors = []
@@ -103,9 +212,6 @@ class Sequential:
 
                 
                 output = self.forward_propagation(x_batch)
-
-                #TODO
-                #output.shape (number of neurons in the last layer) ?= y_batch.shape
 
                 err += np.sum(self.loss(y_batch, output))
 
@@ -143,23 +249,14 @@ class Sequential:
                 if early < epochs / 10:
                     if val_err < self.val_best_loss:
                         self.val_best = None
+                        self.val_best_loss = val_err
                         self.val_best = copy.deepcopy(self)
                         early = 0
-                        self.val_best_loss = val_err
                     else:
                         early += 1
                 elif self.stop:
                     return self.val_best
                 
-            # if i % 5 == 4: 
-            # print(f"Epoch {i+1}/{epochs}, Error: {err}, ",end="")
-            # if val_set is not None:            # and i % 5 == 4: 
-            #     print(f"val_err: {val_err}") 
-
-
-        # for i,l in enumerate(self.layers):
-        #     print(f"layer {i}\n{l.weights}")
-
 
     def summary(self):
         print(f"Optimizer: {str(self.optimizer)}")
